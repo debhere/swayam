@@ -4,7 +4,7 @@ package = true
 [project]
 name = "swayam"
 version = "0.1.0"
-description = "This is a simple RAG based Q/A app to enquire about LICs insurance products."
+description = "This is a simple RAG based Q/A app to enquire about LIC's insurance products."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
