@@ -18,12 +18,16 @@ def getContent(url: str) -> bytes|None:
         url: str, url of the website.
 
     Returns:
-        bytes: response.content, The content of the response ofject from the request. get(url) call.
+        response.content: bytes, The content of the response ofject from the request. get(url) call.
     """
-    response = requests.get(url)
-    if response.status_code != 200:
-        raise Exception
-    return response.content
+    try:
+
+        response = requests.get(url)
+        if response.status_code != 200:
+            return None
+        return response.content
+    except Exception as e:
+        raise CustomException(e, sys)
 
 
 def getSoup(url: str) -> BeautifulSoup:
@@ -35,12 +39,15 @@ def getSoup(url: str) -> BeautifulSoup:
         url: str, url of a website.
 
     Returns:
-        BeautifulSoup: BeautifulSoup object
+        soup: BeautifulSoup object
     """
-    content = getContent(url)
-    if content:
-        soup = BeautifulSoup(content, 'html.parser')
-        return soup
+    try:
+        content = getContent(url)
+        if content:
+            soup = BeautifulSoup(content, 'html.parser')
+            return soup
+    except Exception as e:
+        raise CustomException(e, sys)
 
 
 def getPagesForInsurancePlans(soup: BeautifulSoup) -> Dict:
@@ -61,21 +68,25 @@ def getPagesForInsurancePlans(soup: BeautifulSoup) -> Dict:
         soup: BeautifulSoup, a BeautifulSoup object.
 
     Returns:
-        Dict: policy_map, A dictionary containing the urls corresponding to each insurance category.
+        policy_map: Dict, A dictionary containing the urls corresponding to each insurance category.
 
     """
-    elements = [elem.find('a').find_next('ul', class_='child-menu') for elem in soup.select('li.has-sub')]
-    elems = set(elem.find_next('ul', class_="child-menu") for elem in elements if "Insurance" in elem.find_next('li').find_next('a')['title']\
-         and "Plan" in elem.find_next('li').find_next('a')['title'])
-    
-    policy_map = {}
+    try:
+        elements = [elem.find('a').find_next('ul', class_='child-menu') for elem in soup.select('li.has-sub')]
+        elems = set(elem.find_next('ul', class_="child-menu") for elem in elements if "Insurance" in elem.find_next('li').find_next('a')['title']\
+            and "Plan" in elem.find_next('li').find_next('a')['title'])
+        
+        policy_map = {}
 
-    for elem in elems:
-        links = elem.find_all('a')
-        for link in links:
-            policy_map[link['title'].strip().replace(' ', '_')] = link['href']
-            
-    return policy_map
+        for elem in elems:
+            links = elem.find_all('a')
+            for link in links:
+                policy_map[link['title'].strip().replace(' ', '_')] = link['href']
+                
+        return policy_map
+    
+    except Exception as e:
+        raise CustomException(e, sys)
 
 
 def getInsurancePlanLinks(policyPage: Dict) -> Dict:
@@ -93,7 +104,7 @@ def getInsurancePlanLinks(policyPage: Dict) -> Dict:
         policyPage: Dict, a dictionary containing the insurance-product and the their webpage url.
 
     Returns:
-        Dict: policy_links, a python dictionary containing insurance-product and it's policies with the 
+        policy_links: Dict, a python dictionary containing insurance-product and it's policies with the 
         urls.
     """
     policy_links = {}
@@ -105,24 +116,58 @@ def getInsurancePlanLinks(policyPage: Dict) -> Dict:
     return policy_links
 
 
-def getPolicyLinksPerPlan(base: str, planLinks: Dict) -> Dict:
-    pdfLinks = {}
-    for plan, links in planLinks.items():
-        policyMap = {}
-        for policy, link in links.items():
-            soup = getSoup(f"{base}/{link}")
-            pdf = [link['href'] for link in soup.find_all('a') if "Policy Document" in link.text][0]
-            pdf = pdf[: pdf.index('pdf') + 3]
-            policyMap[policy] = pdf
-        pdfLinks[plan] = policyMap
-    return pdfLinks
+def getPolicyLinksPerPlan(url: str, planLinks: Dict) -> Dict:
+    """Each policy has it's own policy document in a pdf file. The pdf file link has be grabbed and mapped
+    with every policy and in turn for every insurance category.
+
+    This function takes the python dictionary where the links for each plan contains. It also takes
+    the base url as input because the policy urls are all relative paths and to make a complete url,
+    the base url is required.
+
+    For each policy, the policy pdf is link is being extracted and put it against each policy and then
+    returns it.
+
+    Args:
+        url: string, the base url for the insurance products
+        planLinks: Dict, html page link for each insurance policy.
+
+    Returns:
+        pdfLinks: Dict, a python dictionary consisting the insurance category vs policy and it's policy
+        document.
+    """
+    try:
+        pdfLinks = {}
+        for plan, links in planLinks.items():
+            policyMap = {}
+            for policy, link in links.items():
+                soup = getSoup(f"{url}/{link}")
+                pdf = [link['href'] for link in soup.find_all('a') if "Policy Document" in link.text][0]
+                pdf = pdf[: pdf.index('pdf') + 3]
+                policyMap[policy] = pdf
+            pdfLinks[plan] = policyMap
+        return pdfLinks
+    except Exception as e:
+        raise CustomException(e, sys)
 
 
 
-def downloadPolicyDocuments(url: str, pdfs: Dict, folder: str):
+def downloadPolicyDocuments(url: str, pdfs: Dict, destination: str):
+    """This function extracts the policy document for each policy and downloads it. The raw data destination
+    is passed as an argument whereas the downloaded policy documents are kept within another folder as per the 
+    insurance category.
+
+    Args:
+        url: string, base url for insurance products.
+        pdfs: Dict, the pdf policy document link for each policy.
+        destination: string, folder path to download the policy pdfs.
+
+    Returns:
+        None
+
+    """
     for plan, policyPdfs in pdfs.items():
         for policy, pdf in policyPdfs.items():
-            file_location = Path(f"{folder}/{plan.lower()}")
+            file_location = Path(f"{destination}/{plan.lower()}")
             if not file_location.is_dir():
                 file_location.mkdir(parents=True, exist_ok=True)
             with open(f"{file_location}/{policy.lower()}.pdf", 'wb') as f:
@@ -132,18 +177,46 @@ def downloadPolicyDocuments(url: str, pdfs: Dict, folder: str):
 
 
 def run(url: str, location: str) -> str:
-    soup = getSoup(url)
-    plan_pages = getPagesForInsurancePlans(soup)
-    plan_links = getInsurancePlanLinks(plan_pages)
-    # return plan_links
-    planPdfs = getPolicyLinksPerPlan(url, plan_links)
-    downloadPolicyDocuments(url, planPdfs, location)
-    return "OK"
+    """This function acts like the controller. It takes the base url and the destination folder location
+    as arguments.
+    
+    At first, it gets a soup object and gets the html pages for each insurance plan.
+    Second, it passes the html pages to getInsurancePlanLinks() to get the policy links for each plan and policy.
+    Then, it gets the links to each policy from getInsurancePlanLinks() function
+    Once policy links known, the corresponding policy pdf links are required. getPolicyLinksPerPlan() returns the 
+    same. In the end, as per the pdf links, the policy pdf documents are download.
+
+    Args:
+        url: string, base url for LIC insurance products.
+        location: string, the location where the policy pdf files are to be downloaded.
+
+    Returns:
+        "OK": string, if everything is fine.
+    """
+    try:
+        soup = getSoup(url)
+
+        logging.info("Getting the html pages for each insurance plan...")
+        plan_pages: Dict = getPagesForInsurancePlans(soup)
+        
+        logging.info("Policy links are being extracted...")
+        plan_links: Dict = getInsurancePlanLinks(plan_pages)
+        
+        logging.info("Policy documents are being mapped per policy...")
+        planPdfs: Dict = getPolicyLinksPerPlan(url, plan_links)
+
+        logging.info("Policy documents downloading...")
+        downloadPolicyDocuments(url, planPdfs, location)
+        
+        print("Download Successful")
+        return "OK"
+    except Exception as e:
+        raise CustomException(e, sys)
 
 
 if __name__ == "__main__":
     try:
-        url: str = config.URL
+        url: str = config.BASE_URL
         policies: str = config.RAW_DATA_FOLDER
         logging.info("Intiate scraping")
         run(url, policies)
