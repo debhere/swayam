@@ -16,10 +16,6 @@ from langchain_core.documents.base import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
-# DB_NAME: str = config.DB_NAME
-# KNOWLEDGE_BASE: str = config.KNOWLEDGE_BASE
-# EMBEDDING_MODEL: str = config.EMBEDDING_MODEL_HF
-
 
 def load_json_with_root(file_path: str) -> JSONLoader:
     """This function takes a json filepath as argument and returns a JSONLoader object. 
@@ -164,13 +160,3 @@ def build_vectorstore(knowledge_base: str, vector_db: str, embedding_model: str)
 
     except Exception as e:
         raise CustomException(e, sys)
-
-
-# if __name__ == "__main__":
-#     try:
-#         logging.info("vector-store creation started...")
-#         build_vectorstore(KNOWLEDGE_BASE, DB_NAME, EMBEDDING_MODEL)
-
-#         logging.info("vector-store is created successfully...")
-#     except Exception as e:
-#         raise CustomException(e, sys)
