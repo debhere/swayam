@@ -11,6 +11,9 @@ data/
 knowledge-base/
 vector-db/
 
+# Gradio
+.gradio/
+
 # Application logs
 logs/
 
