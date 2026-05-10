@@ -12,7 +12,7 @@ KNOWLEDGE_BASE: str = "knowledge-base"
 
 DB_NAME: str = "vector-db"
 
-EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL_HF: str = "all-MiniLM-L6-v2"
 CHAT_MODEL: str = "gpt-4.1-nano"
 
 LOGS: str = "logs"
