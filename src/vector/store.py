@@ -3,16 +3,10 @@ import sys
 import glob
 import json
 
-from typing import List, Dict, Any
-from utils import config
+from typing import List, Dict
+# from utils import config
 from utils.exception import CustomException
 from utils.logger import logging
-
-# import numpy as np
-# from dotenv import load_dotenv
-# from pathlib import Path
-
-#import tiktoken
 
 # from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
@@ -20,13 +14,11 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.document_loaders import DirectoryLoader, JSONLoader
 from langchain_core.documents.base import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-# from langchain_core.messages import SystemMessage, HumanMessage
 
 
-DB_NAME: str = config.DB_NAME
-KNOWLEDGE_BASE: str = config.KNOWLEDGE_BASE
-EMBEDDING_MODEL: str = config.EMBEDDING_MODEL
-
+# DB_NAME: str = config.DB_NAME
+# KNOWLEDGE_BASE: str = config.KNOWLEDGE_BASE
+# EMBEDDING_MODEL: str = config.EMBEDDING_MODEL_HF
 
 
 def load_json_with_root(file_path: str) -> JSONLoader:
@@ -114,9 +106,9 @@ def create_chunks_from_documents(documents: List[Document]) -> List[Document]:
 def get_hf_embeddings(model) -> HuggingFaceEmbeddings:
     return HuggingFaceEmbeddings(model=model)
 
+def is_db_exists(db_name) -> bool:
+    return os.path.exists(db_name)
 
-def get_existing_vectorstore(db_name, chunks: Document):
-    pass
 
 def create_vectorstore(chunks: List[Document], db_name: str, embedding_model: str) -> Chroma:
     """Actual vector-store is created with Chroma db.
@@ -132,7 +124,7 @@ def create_vectorstore(chunks: List[Document], db_name: str, embedding_model: st
     try:
         # embeddings = HuggingFaceEmbeddings(model=embedding_model)
         embeddings = get_hf_embeddings(embedding_model)
-        if os.path.exists(db_name):
+        if is_db_exists(db_name):
             Chroma(persist_directory=db_name, embedding_function=embeddings, documents=chunks).delete_collection()
             # Removes existing db collection with same db-name
 
@@ -145,7 +137,7 @@ def create_vectorstore(chunks: List[Document], db_name: str, embedding_model: st
         raise CustomException(e, sys)
     
 
-def run(knowledge_base: str, vector_db: str, embedding_model: str) -> Chroma:
+def build_vectorstore(knowledge_base: str, vector_db: str, embedding_model: str) -> Chroma:
     """The controller function of the overall vector-store creation process.
 
     i) Creates the documents.
@@ -174,11 +166,11 @@ def run(knowledge_base: str, vector_db: str, embedding_model: str) -> Chroma:
         raise CustomException(e, sys)
 
 
-if __name__ == "__main__":
-    try:
-        logging.info("vector-store creation started...")
-        run(KNOWLEDGE_BASE, DB_NAME, EMBEDDING_MODEL)
+# if __name__ == "__main__":
+#     try:
+#         logging.info("vector-store creation started...")
+#         build_vectorstore(KNOWLEDGE_BASE, DB_NAME, EMBEDDING_MODEL)
 
-        logging.info("vector-store is created successfully...")
-    except Exception as e:
-        raise CustomException(e, sys)
+#         logging.info("vector-store is created successfully...")
+#     except Exception as e:
+#         raise CustomException(e, sys)
