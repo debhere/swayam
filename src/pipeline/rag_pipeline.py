@@ -14,13 +14,18 @@ from langchain_chroma import Chroma
 from langchain_core.messages import SystemMessage, HumanMessage
 
 
-# db_name: str = config.DB_NAME
-# embedding_model_hf: str = config.EMBEDDING_MODEL_HF
-# chat_model: str = config.CHAT_MODEL
-# knowledge_base: str = config.KNOWLEDGE_BASE
-
  
 def get_retriever(existing=True):
+    """The function returns an existing retreiver object by default. If vector database is not yet
+    created or asked otherwise, it calls store.py to create/override the vector database first and then
+    returns retriever object
+
+    Args:
+        existing: bool, by default existing is returned
+
+    Returned:
+        retriver object
+    """
     try:
         db_name = config.DB_NAME
         embedding_model_hf = config.EMBEDDING_MODEL_HF
@@ -38,6 +43,15 @@ def get_retriever(existing=True):
 
 
 def get_llm():
+    """Using ChatOpenAI api call, an llm object is created and returned. OPENAI api key has to be present
+    in the environment variable.
+
+    Args:
+        None
+
+    Returns:
+        llm object.
+    """
     try:
         load_dotenv(override=True)
         openai_api_key: str = os.getenv("OPENAI_API_KEY")
@@ -55,16 +69,29 @@ def get_system_prompt():
     except Exception as e:
         raise CustomException(e, sys)
 
-def answer_question(question: str, history):
-    retriever = get_retriever()
-    docs = retriever.invoke(question)
-    context = "\n\n".join(doc.page_content for doc in docs)
-    
-    system_prompt = get_system_prompt().format(context=context)
-    llm = get_llm()
+def answer_question(question: str, history) -> str:
+    """This is the call back function to be called from user questions. Here are the steps:
 
-    response = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=question)])
-    return response.content
+    i) A retriever object is obtained from the existing vector store.
+    ii) Accordingly corresponding documents are retrieved from the database.
+    iii) Context is set with the information fetched from database.
+    iv) system prompt is compiled.
+    v) llm is invoked with the system prompt and the user question.
+    vi) llm response is returned.
+
+    """
+    try:
+        retriever = get_retriever()
+        docs = retriever.invoke(question)
+        context = "\n\n".join(doc.page_content for doc in docs)
+        
+        system_prompt = get_system_prompt().format(context=context)
+        llm = get_llm()
+
+        response = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=question)])
+        return response.content
+    except Exception as e:
+        CustomException(e, sys)
 
 
 
