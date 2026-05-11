@@ -10,6 +10,7 @@ import gradio as gr
 if __name__ == "__main__":
     try:
         logging.info("Launching app...")
-        gr.ChatInterface(fn=rag_pipeline.answer_question).launch(share=True)
+
+        gr.ChatInterface(fn=rag_pipeline.answer_question).launch()
     except Exception as e:
         raise CustomException(e, sys)

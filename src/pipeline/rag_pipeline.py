@@ -11,7 +11,7 @@ from src.vector import store
 
 from langchain_openai import ChatOpenAI
 from langchain_chroma import Chroma
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 
  
@@ -68,6 +68,16 @@ def get_system_prompt():
             return system_prompt
     except Exception as e:
         raise CustomException(e, sys)
+    
+
+def convert_history(gradio_history):
+    messages = []
+    for human, ai in gradio_history:
+        messages.append(HumanMessage(content=human))
+        messages.append(AIMessage(content=ai))
+    return messages
+
+
 
 def answer_question(question: str, history) -> str:
     """This is the call back function to be called from user questions. Here are the steps:
@@ -86,9 +96,13 @@ def answer_question(question: str, history) -> str:
         context = "\n\n".join(doc.page_content for doc in docs)
         
         system_prompt = get_system_prompt().format(context=context)
+        # history_messages = convert_history(history)
+
         llm = get_llm()
 
         response = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=question)])
+        # response = llm.invoke([SystemMessage(content=system_prompt)] + history_messages + 
+        #                       [HumanMessage(content=question)])
         return response.content
     except Exception as e:
         CustomException(e, sys)
