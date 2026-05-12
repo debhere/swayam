@@ -71,10 +71,21 @@ def get_system_prompt():
     
 
 def convert_history(gradio_history):
+    """Converting conversation history that can be pushed to chat model.
+
+    Args:
+        gradio_history: List[Dict], conversation history that gradio passes to it's callback function.
+
+    Returns:
+        messages: List[Dict], converted into langchain_core message template
+    """
     messages = []
-    for human, ai in gradio_history:
-        messages.append(HumanMessage(content=human))
-        messages.append(AIMessage(content=ai))
+    for h in gradio_history[-5:]: # set the limit to 5 history messages
+        message = h['content'][0]['text']
+        if h['role'] == 'user':
+            messages.append(HumanMessage(content=message))
+        else:
+            messages.append(AIMessage(content=message))
     return messages
 
 
@@ -96,13 +107,17 @@ def answer_question(question: str, history) -> str:
         context = "\n\n".join(doc.page_content for doc in docs)
         
         system_prompt = get_system_prompt().format(context=context)
-        # history_messages = convert_history(history)
+
+        if history:
+            history = convert_history(history)
+
 
         llm = get_llm()
 
-        response = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=question)])
-        # response = llm.invoke([SystemMessage(content=system_prompt)] + history_messages + 
-        #                       [HumanMessage(content=question)])
+        # response = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=question)])
+
+        response = llm.invoke([SystemMessage(content=system_prompt)] + history + 
+                              [HumanMessage(content=question)])
         return response.content
     except Exception as e:
         CustomException(e, sys)
