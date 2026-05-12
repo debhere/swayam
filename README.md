@@ -92,6 +92,6 @@ app.py: This is the gradio front-end chat interface that gets the user query and
 
 Please message me on 
 
-[![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/debmalyamondal). 
+[![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/debmalyamondal) 
 
 Happy to have any suggestions, Thank you.!
