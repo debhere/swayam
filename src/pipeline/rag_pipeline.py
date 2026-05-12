@@ -11,7 +11,7 @@ from src.vector import store
 
 from langchain_openai import ChatOpenAI
 from langchain_chroma import Chroma
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 
  
@@ -68,6 +68,27 @@ def get_system_prompt():
             return system_prompt
     except Exception as e:
         raise CustomException(e, sys)
+    
+
+def convert_history(gradio_history):
+    """Converting conversation history that can be pushed to chat model.
+
+    Args:
+        gradio_history: List[Dict], conversation history that gradio passes to it's callback function.
+
+    Returns:
+        messages: List[Dict], converted into langchain_core message template
+    """
+    messages = []
+    for h in gradio_history[-5:]: # set the limit to 5 history messages
+        message = h['content'][0]['text']
+        if h['role'] == 'user':
+            messages.append(HumanMessage(content=message))
+        else:
+            messages.append(AIMessage(content=message))
+    return messages
+
+
 
 def answer_question(question: str, history) -> str:
     """This is the call back function to be called from user questions. Here are the steps:
@@ -86,9 +107,17 @@ def answer_question(question: str, history) -> str:
         context = "\n\n".join(doc.page_content for doc in docs)
         
         system_prompt = get_system_prompt().format(context=context)
+
+        if history:
+            history = convert_history(history)
+
+
         llm = get_llm()
 
-        response = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=question)])
+        # response = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=question)])
+
+        response = llm.invoke([SystemMessage(content=system_prompt)] + history + 
+                              [HumanMessage(content=question)])
         return response.content
     except Exception as e:
         CustomException(e, sys)
