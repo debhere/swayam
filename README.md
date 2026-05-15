@@ -46,7 +46,7 @@ NOTE: cloud deployment is not done in this version but you are free to make your
 
 ```bash
 
-uv run python app.py
+uv run app.py
 
 ```
 
