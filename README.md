@@ -73,7 +73,7 @@ scripts contains 2 python files which are in a way pre-requisites for this app t
 src contains the main meat of this app i.e., vector-store creation and RAG pipeline.
 
 - vector\store.py: It creates the vector-store from the knowledge-base.
-- pipeline\rag_pipeline.py: This is the RAG pipeline. For every user query, it retrieves the context from the vector-store if available and sends it with the system prompt. Thereafter LLM response is also received and rendered on to thr gradio app.
+- pipeline\rag_pipeline.py: This is the RAG pipeline. For every user query, it retrieves the context from the vector-store if available and sends it with the system prompt. Thereafter LLM response is also received and rendered on to the gradio app.
 
 ### utils
 
