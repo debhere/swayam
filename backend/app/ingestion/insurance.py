@@ -1,6 +1,6 @@
 import sys
 import logging
-import string
+
 
 from typing import List
 from bs4 import BeautifulSoup
@@ -51,6 +51,8 @@ def download_insurance_docs(base_url: str, prd_str: str, lic_url: str):
                     links: List[str] = [anchor.get('href') for anchor in anchors]
                     policy: str = policy_details.find_all('section', {'id': 'maincontent'})[0].find('h5').get_text()
 
+                    if len(links) > 3:
+                        links = links[-3:]
                         
                     save_documents("insurance", lic_url, 
                                 links, policy, categories[idx])
