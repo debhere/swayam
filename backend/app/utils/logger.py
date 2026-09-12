@@ -28,7 +28,7 @@ def setup_logging():
     console.setLevel(logging.INFO)
     console.setFormatter(fmt)
 
-    file_handler = logging.FileHandler(LOG_FILE_PATH)
+    file_handler = logging.FileHandler(LOG_FILE_PATH, encoding='utf-8')
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(fmt)
 
