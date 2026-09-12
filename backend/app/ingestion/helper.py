@@ -75,11 +75,14 @@ def save_documents(product: str, base_url: str, documents: List[str],
                     policy = policy.replace(char, replacement)
 
                 policy = policy.replace("LIC's ", "").replace(" ", "_").replace("-", "")
-                policy = policy.replace("(", "").replace(")", "")
-                policy = policy.replace("/", "_")
+                policy = policy.replace("(", "").replace(")", "").replace(":", "_")
+                policy = policy.replace("/", "_").replace("'s", "")
 
-                doc_name: str = f"{policy}_{doc_type_map[idx]}"
+                doc_name: str = f"{policy.lower()}_{doc_type_map[idx]}"
                 filepath = Path(f"{policy_raw_loc}/{doc_name}.pdf")
+
+                if doc_name.startswith("female"):
+                    print(f"{doc_name}: {filepath}")
 
                 try:
 
