@@ -2,12 +2,12 @@ import sys
 import logging
 
 
-from typing import List
+from typing import List, Dict
 
 from app.ingestion.common import save_documents, get_policy_urls
 from app.ingestion.common import get_policy_details
 
-from app.ingestion.helper import get_relevant_documents
+from app.ingestion.helper import get_relevant_documents, get_document_map
 
 from app.utils.exception import CustomException
 from app.utils.logger import setup_logging
@@ -37,8 +37,9 @@ def download_other_product_docs(base_url: str, prd_str: str, lic_url: str, produ
             links, policy = get_policy_details(url)
 
             links = get_relevant_documents(links)
+            document_map: Dict[str, str] = get_document_map(links)
 
-            save_documents(product, lic_url, links, policy)
+            save_documents(product, lic_url, document_map, policy)
         logger.info(f"{product} documents are downloaded...")
     except Exception as e:
         raise CustomException(e, sys)

@@ -2,10 +2,12 @@ import sys
 import logging
 
 
-from typing import List
+from typing import List, Dict
 from bs4 import BeautifulSoup
 
 from app.ingestion.common import save_documents, get_policy_urls, get_policy_details
+
+from app.ingestion.helper import get_document_map
 from app.ingestion.helper import get_html_contents, get_relevant_documents
 
 from app.utils.exception import CustomException
@@ -50,7 +52,8 @@ def download_insurance_docs(base_url: str, prd_str: str, lic_url: str):
             for url in policy_urls:
                 links, policy = get_policy_details(url)
                 links = get_relevant_documents(links)
-                save_documents("insurance", lic_url, links, policy, categories[idx]) # Saving documents
+                rearranged_links: Dict[str, str] = get_document_map(links)
+                save_documents("insurance", lic_url, rearranged_links, policy, categories[idx]) # Saving documents
 
         logger.info("Insurance documents are downloaded...")
     except Exception as e:

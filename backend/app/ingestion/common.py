@@ -29,6 +29,8 @@ def get_policy_urls(lic_web: str, product_url: str) -> List[str|None]:
 
         elements: List[str] = soup.find_all('td')
 
+        logger.info("extracting the policy urls...")
+
         for element in elements:
             for anchor in element.find_all('a'):
                 policy_urls.append(f"{lic_web}{anchor.get('href')}")
@@ -51,6 +53,8 @@ def get_policy_details(policy_url: str) -> Tuple[List[str], str]:
     try:
         policy_details: BeautifulSoup = get_html_contents(policy_url)
 
+        logger.info("Compiling the policy artefacts...")
+
         anchors: List[str] = policy_details.find_all('section', {'id': 'maincontent'})[0].find_all('a')
         links: List[str] = [anchor.get('href') for anchor in anchors]
         policy: str = policy_details.find_all('section', {'id': 'maincontent'})[0].find('h5').get_text()
@@ -62,7 +66,7 @@ def get_policy_details(policy_url: str) -> Tuple[List[str], str]:
 
 
 
-def save_documents(product: str, base_url: str, documents: List[str], 
+def save_documents(product: str, base_url: str, document_mapping: Dict[str, str], 
                    policy: str, category: str = None):
     """This function is the common function across LIC products to download the corresponding
     LIC artefacts and save in pdf.
@@ -86,14 +90,14 @@ def save_documents(product: str, base_url: str, documents: List[str],
 
             logging.info(f'Downloading {policy} artifacts...')
 
-            print(documents)
+            # print(documents)
 
-            for idx, document in enumerate(documents):
+            for doc_type, document in document_mapping.items():
                 doc_url: str = f"{base_url}{document}"
 
-                doc_type_map: Dict = {0: 'sales_brochure', 
-                                      1: 'policy_doc',
-                                      2: 'cis'}
+                # doc_type_map: Dict = {0: 'policy_doc', 
+                #                       1: 'cis',
+                #                       2: 'sales_brochure'}
 
 
                 policy_raw_loc: str = f"{INS_RAW_LOC}/{category}" if category is not None else INS_RAW_LOC
@@ -101,8 +105,9 @@ def save_documents(product: str, base_url: str, documents: List[str],
 
                 policy: str = _get_refined_policy_name(policy=policy)
 
-                doc_name: str = f"{policy.lower()}_{doc_type_map[idx]}"
+                doc_name: str = f"{policy.lower()}_{doc_type}"
                 filepath = Path(f"{policy_raw_loc}/{doc_name}.pdf")
+
 
                 try:
 
