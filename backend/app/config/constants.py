@@ -1,11 +1,11 @@
-from typing import List
+from typing import Dict
 
+LIC_WEB: str = "https://licindia.in"
 LIC_BASE_URL: str = "https://licindia.in/web/guest/"
-# COMMON_STRING: str = "/web/guest/"
-# PRODUCT_PAGE: str = "products"
 
-PRODUCT_CATEGORIES: List[str] = ['insurance-plan', 'pension-plan', 'unit-linked-plans', 
-                                 'micro-insurance-plans', 'withdrawn-plans']
+
+PRODUCT_CATEGORIES: Dict[str, str] = {'insurance': 'insurance-plan', 'pension': 'pension-plan', 'ulp':'unit-linked-plans', 
+                                 'mip': 'micro-insurance-plans', 'wp':'withdrawn-plans'}
 
 
 PARENT_DATA_DIR: str = "data"
