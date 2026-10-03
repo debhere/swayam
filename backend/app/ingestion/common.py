@@ -1,4 +1,6 @@
 import sys
+import json
+
 import logging
 import requests
 
@@ -8,11 +10,15 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 from app.ingestion.helper import _get_refined_policy_name
-from app.ingestion.helper import get_html_contents
+from app.ingestion.helper import get_html_contents, get_document_type
 
 from app.config import constants
+from app.config.settings import appSettings
+
 from app.utils.exception import CustomException
 from app.utils.logger import setup_logging
+
+from llama_cloud import LlamaCloud
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -123,3 +129,137 @@ def save_documents(product: str, base_url: str, document_mapping: Dict[str, str]
 
     except Exception as e:
         raise CustomException(e, sys)
+
+
+def _get_destination_filepath(document_location: str):
+    path_list: List[str] = []
+
+    for doc in Path(document_location).iterdir():
+        if doc.is_dir():
+            for d in Path(doc).iterdir():
+                path_list.append(f"{doc.name}/{d.name}")
+            continue
+        path_list.append(doc.name)
+
+    return path_list
+
+
+def _get_parsing_configurations(document):
+    doc_type = get_document_type(document)
+
+
+def _create_metadata(product_category, document_name, product_subcategory=None):
+
+    try:
+        METADATA_DIR: str = f"{HOME_DIR}/{constants.PARENT_DATA_DIR}/{constants.METADATA_DIR}"
+        Path(METADATA_DIR).mkdir(parents=True, exist_ok=True)
+
+        doc_type_map: Dict[str] = {
+            'cis': "CUSTOMER INFORMATION SHEET",
+            'sales': "SALES BROCHURE",
+            'policy': "POLICY DOCUMENT"
+        }
+
+        doc_type: str = get_document_type(document=document_name)
+        std_doc_type: str = doc_type_map[doc_type]
+
+        idx = document_name.find(f"_{doc_type}")
+        policy_name = document_name[:idx].replace("_", " ")
+
+        
+        policy_name: str = document_name.replace("_cis", "").replace("_policy_doc", "").replace("_sales_brochure", "")
+        policy_name = policy_name.replace(".pdf", "").replace("_", " ")
+
+        file_metadata = {
+            "policy_name": policy_name,
+            "document_name": document_name,
+            "document_type": std_doc_type,
+            "product_category": product_category,
+            "product_subcategory": product_subcategory,
+            "product_status": "active"
+        }
+
+        filename = document_name.split('.')[0]
+        filepath = Path(f"{METADATA_DIR}/{filename}.json")
+
+        with open(filepath, "w") as f:
+            json.dump(file_metadata, f, indent=2)
+
+    except Exception as e:
+        raise CustomException(e, sys)
+
+
+
+def parse_pdf_to_markdown() -> None:
+    """for each document category loop through the folder and save the parsed document
+    in the specific destination folder and of course create the folder if not created.
+    """
+    try:
+
+        logger.info("Parsing process getting initialized...")
+
+        COMMON_PATH: str = f"{HOME_DIR}/{constants.PARENT_DATA_DIR}"
+        SOURCE_BASE_DIR: str = f"{COMMON_PATH}/{constants.RAW_DATA_DIR}"
+        DESTINATION_BASE_DIR: str = f"{COMMON_PATH}/{constants.PROCESSED_DATA_DIR}"
+
+        client = LlamaCloud(api_key=appSettings.llama_cloud_api_key)
+
+        for dir in Path(SOURCE_BASE_DIR).iterdir():
+            product_category: str = dir.name
+
+            SOURCE_DOC_DIR: str = f"{SOURCE_BASE_DIR}/{product_category}"
+            PARSED_DOC_DIR: str = f"{DESTINATION_BASE_DIR}/{product_category}"
+
+            logger.info(f"Compiling the source: {SOURCE_DOC_DIR} and destimation: {PARSED_DOC_DIR}")
+            
+
+            documents = _get_destination_filepath(dir)
+
+            # print(documents)
+            # print()
+
+            for document in documents:
+                # DESTINATION_DIR = f"{PARSED_PLAN_DIR}/{document.split('/')[0]}"
+                # Path(DESTINATION_DIR).mkdir(parents=True, exist_ok=True)
+
+                if document != document.split('/')[0]:
+                    product_sub_category: str = document.split('/')[0]
+                    DESTINATION_DIR: str = f"{PARSED_DOC_DIR}/{product_sub_category}"
+                    SOURCE_DIR: str = f"{SOURCE_DOC_DIR}/{product_sub_category}"
+                    document = document.split('/')[1]
+                else:
+                    DESTINATION_DIR: str = f"{PARSED_DOC_DIR}"
+                    SOURCE_DIR: str = f"{SOURCE_DOC_DIR}"
+
+                Path(DESTINATION_DIR).mkdir(parents=True, exist_ok=True)
+                logger.info(f"parsing...{document}")
+
+                filename = document.split('.')[0]
+
+                try:
+
+                    file = client.files.create(file=Path(f"{SOURCE_DIR}/{document}"), purpose="parse")
+                    
+                    result = client.parsing.parse(
+                        file_id=file.id,
+                        tier="agentic",
+                        version="latest",
+                        expand=["markdown"]
+                    )
+
+                    markdown_string = "\n\n".join(page.markdown for page in result.markdown.pages)
+
+                    with open(Path(f"{DESTINATION_DIR}/{filename}.md"), "w", encoding="utf-8") as f:
+                        f.write(markdown_string)
+
+                    _create_metadata(product_category, document, product_sub_category)
+                
+                except Exception as e:
+                    logger.info(f"Exception occured: {e}")
+                    continue
+    
+    except Exception as e:
+        raise CustomException(e, sys)
+
+            
+    
