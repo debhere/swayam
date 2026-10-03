@@ -54,6 +54,17 @@ def get_document_map(documents: List[str]) -> Dict[str, str]:
 
     return document_map
 
+def get_document_type(document: str) -> str:
+    document_type = ""
+    
+    if document.lower().find("policy") != -1:
+        document_type = "policy"
+    elif document.lower().find("cis") != -1:
+        document_type = "cis"
+    elif document.lower().find("sales") != -1:
+            document_type = "sales"
+
+    return document_type
 
 def _get_refined_policy_name(policy: str) -> str:
     """Replaces the unicode characters and other unwanted characters from the passing string

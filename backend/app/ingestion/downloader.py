@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    """Main controller of the ingestion module. Invokes the product functions for each LIC product
+    """Starting point of the ingestion module. Invokes the product functions for each LIC product
     and downloads the corresponding artefacts.
     """
     try:
