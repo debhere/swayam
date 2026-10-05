@@ -3,6 +3,7 @@ import json
 
 import logging
 import requests
+import pymupdf
 
 from typing import List, Dict, Tuple
 from pathlib import Path
@@ -131,7 +132,7 @@ def save_documents(product: str, base_url: str, document_mapping: Dict[str, str]
         raise CustomException(e, sys)
 
 
-def _get_destination_filepath(document_location: str):
+def _get_destination_filepath(document_location: str) -> List[str]:
     path_list: List[str] = []
 
     for doc in Path(document_location).iterdir():
@@ -144,8 +145,30 @@ def _get_destination_filepath(document_location: str):
     return path_list
 
 
-def _get_parsing_configurations(document):
+def _get_parsing_configurations(document: str) -> Tuple[str, str]:
+    tier_map: Dict[str, str] = {
+        "cis": "agentic",
+        "sales": "cost_effective",
+        "policy": "cost_effective"
+    }
+
+    pages = pymupdf.open(document)
+    total_pages = len(pages)
+
+    pages_map: Dict[str, str] = {
+        "cis": f"1-{total_pages}",
+        "sales": f"2-{total_pages - 3}",
+        "policy": f"1-{total_pages}"
+    }
+
     doc_type = get_document_type(document)
+    
+    tier = tier_map[doc_type]
+    target_pages = pages_map[doc_type]
+
+    return tier, target_pages
+
+
 
 
 def _create_metadata(product_category, document_name, product_subcategory=None):
@@ -215,12 +238,7 @@ def parse_pdf_to_markdown() -> None:
 
             documents = _get_destination_filepath(dir)
 
-            # print(documents)
-            # print()
-
             for document in documents:
-                # DESTINATION_DIR = f"{PARSED_PLAN_DIR}/{document.split('/')[0]}"
-                # Path(DESTINATION_DIR).mkdir(parents=True, exist_ok=True)
 
                 if document != document.split('/')[0]:
                     product_sub_category: str = document.split('/')[0]
@@ -237,14 +255,17 @@ def parse_pdf_to_markdown() -> None:
                 filename = document.split('.')[0]
 
                 try:
-
+                    tier, target_pages = _get_parsing_configurations(f"{SOURCE_DIR}/{document}")
                     file = client.files.create(file=Path(f"{SOURCE_DIR}/{document}"), purpose="parse")
                     
                     result = client.parsing.parse(
                         file_id=file.id,
-                        tier="agentic",
+                        tier=tier,
                         version="latest",
-                        expand=["markdown"]
+                        expand=["markdown"],
+                        page_ranges = {
+                            "target_pages": target_pages
+                        }
                     )
 
                     markdown_string = "\n\n".join(page.markdown for page in result.markdown.pages)
