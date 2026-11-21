@@ -2,6 +2,33 @@
 
 Swayam provides the policy holders' the information as per the official Life Insurance of India (LIC) Policy documents. Users can verify or compare the AI response with the source documents given in the citation. Swayam is multi-modal in nature i.e., users can communicate in both text or voice with Swayam. India is a vast country and still has a large user base ho are yet to be connected with the country's digital revolution. Hence, along with English, Swayam offers voice command support in multiple Indian languages including - Bengali, Hindi, Marathi, and Kannada.
 
+## Authors
+
+- [@debhere](https://www.github.com/debhere)
+
+
+## Run locally
+
+```bash
+git clone https://github.com/debhere/swayam.git
+```
+
+Package management is done using uv - instructions below are given as per windows, visit uv [website](https://docs.astral.sh/uv/) for additional details and installation steps.
+
+
+If already installed, see if you are on the latest version.
+
+```bash
+uv self update
+```
+
+Now simply run...
+
+```bash
+uv sync
+```
+
+
 ## Problem Statement
 
 ### Context

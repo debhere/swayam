@@ -24,9 +24,11 @@ python --version
 Since, we are using uv, we can let uv manage python
 
 Run:
+
 ```bash
 uv python list
 ```
+
 Then:
 
 ```bash
@@ -40,7 +42,7 @@ uv python list
 
 ### Step 2: Check your pyproject.toml
 
-You probably have something similar to:
+You probably have something similar:
 
 ```bash
 [project]
